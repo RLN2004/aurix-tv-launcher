@@ -35,15 +35,16 @@ class MainActivity : Activity() {
     )
 
     private lateinit var root: FrameLayout
-    private lateinit var title: TextView
+    private lateinit var brand: TextView
     private lateinit var banner: ImageView
     private lateinit var clock: TextView
     private lateinit var date: TextView
     private val bubbles = mutableListOf<ImageView>()
     private var selected = 0
+    private var settingsFocused = false
 
-    private val clockFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
-    private val dateFormat = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
+    private val clockFormat = SimpleDateFormat("h : mm a", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("dd / MM / yyyy", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,9 +62,32 @@ class MainActivity : Activity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_LEFT -> { changeSelection(-1); return true }
-            KeyEvent.KEYCODE_DPAD_RIGHT -> { changeSelection(1); return true }
-            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> { launchSelected(); return true }
+            KeyEvent.KEYCODE_DPAD_UP -> {
+                if (!settingsFocused) {
+                    settingsFocused = true
+                    brand.requestFocus()
+                }
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN -> {
+                if (settingsFocused) {
+                    settingsFocused = false
+                    root.requestFocus()
+                }
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                if (!settingsFocused) changeSelection(-1)
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                if (!settingsFocused) changeSelection(1)
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                if (settingsFocused) openSettings() else launchSelected()
+                return true
+            }
         }
         return super.onKeyDown(keyCode, event)
     }
@@ -74,59 +98,59 @@ class MainActivity : Activity() {
             isFocusableInTouchMode = true
         }
 
-        val brand = TextView(this).apply {
-            text = "A.U.R.I.X."
+        brand = TextView(this).apply {
+            text = "A.U.R.I.X"
             setTextColor(Color.WHITE)
-            textSize = 13f
-            letterSpacing = 0.12f
+            textSize = 25f
+            letterSpacing = 0.04f
             typeface = customFont()
             isFocusable = true
+            isFocusableInTouchMode = true
             setOnClickListener { openSettings() }
-            setOnFocusChangeListener { v, focused -> v.alpha = if (focused) 1f else 0.78f }
-            contentDescription = "A.U.R.I.X. Settings"
+            setOnFocusChangeListener { v, focused -> v.alpha = if (focused) 1f else 0.82f }
+            contentDescription = "A.U.R.I.X Settings"
         }
-        val brandParams = FrameLayout.LayoutParams(-2, dp(42), Gravity.TOP or Gravity.START)
-        brandParams.setMargins(dp(24), dp(8), 0, 0)
+        val brandParams = FrameLayout.LayoutParams(-2, dp(54), Gravity.TOP or Gravity.START)
+        brandParams.setMargins(dp(42), dp(24), 0, 0)
         root.addView(brand, brandParams)
 
-        val timeBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; gravity = Gravity.END }
-        clock = text("", 12, Color.WHITE, true)
-        date = text("", 9, Color.WHITE, false)
+        val timeBox = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.END
+        }
+        clock = text("", 27, Color.WHITE, true)
+        date = text("", 18, Color.WHITE, true)
         timeBox.addView(clock)
         timeBox.addView(date)
         val timeParams = FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END)
-        timeParams.setMargins(0, dp(8), dp(24), 0)
+        timeParams.setMargins(0, dp(20), dp(42), 0)
         root.addView(timeBox, timeParams)
 
         banner = ImageView(this).apply {
             scaleType = ImageView.ScaleType.FIT_CENTER
-            contentDescription = "Selected app banner"
+            contentDescription = "Selected app"
         }
-        val bannerParams = FrameLayout.LayoutParams(dp(360), dp(170), Gravity.CENTER)
-        bannerParams.bottomMargin = dp(115)
+        val bannerParams = FrameLayout.LayoutParams(dp(610), dp(270), Gravity.CENTER)
+        bannerParams.bottomMargin = dp(145)
         root.addView(banner, bannerParams)
-
-        title = text("", 27, Color.WHITE, true).apply {
-            gravity = Gravity.CENTER
-            includeFontPadding = false
-        }
-        val titleParams = FrameLayout.LayoutParams(-1, dp(48), Gravity.CENTER)
-        titleParams.topMargin = dp(115)
-        root.addView(title, titleParams)
 
         apps.forEachIndexed { index, app ->
             val bubble = ImageView(this).apply {
                 setImageResource(app.logo)
                 scaleType = ImageView.ScaleType.FIT_CENTER
-                setPadding(dp(13), dp(13), dp(13), dp(13))
-                background = glassBubble()
-                elevation = dp(5).toFloat()
+                setPadding(dp(42), dp(42), dp(42), dp(42))
+                background = glassBubble(false)
+                elevation = dp(8).toFloat()
                 contentDescription = app.name
                 isFocusable = false
-                setOnClickListener { selected = index; updateSelector(true); launchSelected() }
+                setOnClickListener {
+                    selected = index
+                    updateSelector(true)
+                    launchSelected()
+                }
             }
-            val params = FrameLayout.LayoutParams(dp(62), dp(62), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
-            params.bottomMargin = dp(8)
+            val params = FrameLayout.LayoutParams(dp(210), dp(210), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+            params.bottomMargin = -dp(105)
             root.addView(bubble, params)
             bubbles.add(bubble)
         }
@@ -144,22 +168,42 @@ class MainActivity : Activity() {
 
     private fun updateSelector(animate: Boolean) {
         val app = apps[selected]
-        title.text = app.name
-        title.setTextColor(app.accent)
         banner.setImageResource(app.banner)
 
         bubbles.forEachIndexed { index, bubble ->
             val relative = (index - selected + apps.size) % apps.size
-            val x = when (relative) { 1 -> -dp(64).toFloat(); 2 -> dp(64).toFloat(); else -> 0f }
-            val y = if (relative == 0) -dp(28).toFloat() else 0f
-            val scale = if (relative == 0) 1.12f else 0.88f
-            val alpha = if (relative == 0) 1f else 0.72f
+            val isSelected = relative == 0
+            val size = if (isSelected) dp(230) else dp(210)
+            val params = bubble.layoutParams as FrameLayout.LayoutParams
+            params.width = size
+            params.height = size
+            params.bottomMargin = if (isSelected) dp(18) else -dp(105)
+            bubble.layoutParams = params
+
+            val x = when (relative) {
+                1 -> -dp(238).toFloat()
+                2 -> dp(238).toFloat()
+                else -> 0f
+            }
+            bubble.background = glassBubble(isSelected)
+            bubble.setPadding(
+                if (isSelected) dp(48) else dp(42),
+                if (isSelected) dp(48) else dp(42),
+                if (isSelected) dp(48) else dp(42),
+                if (isSelected) dp(48) else dp(42)
+            )
+            bubble.translationZ = if (isSelected) dp(12).toFloat() else dp(5).toFloat()
+            val scale = if (isSelected) 1f else 1f
+            val alpha = if (isSelected) 1f else 0.82f
+
             if (animate) {
-                bubble.animate().translationX(x).translationY(y).scaleX(scale).scaleY(scale).alpha(alpha)
-                    .setDuration(210).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
+                bubble.animate().translationX(x).translationY(0f).scaleX(scale).scaleY(scale).alpha(alpha)
+                    .setDuration(230)
+                    .setInterpolator(android.view.animation.DecelerateInterpolator())
+                    .start()
             } else {
                 bubble.translationX = x
-                bubble.translationY = y
+                bubble.translationY = 0f
                 bubble.scaleX = scale
                 bubble.scaleY = scale
                 bubble.alpha = alpha
@@ -174,27 +218,42 @@ class MainActivity : Activity() {
             Toast.makeText(this, "${app.name} is unavailable.", Toast.LENGTH_SHORT).show()
             return
         }
-        try { startActivity(intent) }
-        catch (_: Exception) { Toast.makeText(this, "${app.name} could not be opened.", Toast.LENGTH_SHORT).show() }
+        try {
+            startActivity(intent)
+        } catch (_: Exception) {
+            Toast.makeText(this, "${app.name} could not be opened.", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun openSettings() {
-        try { startActivity(Intent(Settings.ACTION_SETTINGS)) }
-        catch (_: Exception) {
-            try { startActivity(Intent().setClassName("com.android.tv.settings", "com.android.tv.settings.MainSettings")) }
-            catch (_: Exception) { Toast.makeText(this, "TV Settings could not be opened.", Toast.LENGTH_SHORT).show() }
+        try {
+            startActivity(Intent(Settings.ACTION_SETTINGS))
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent().setClassName("com.android.tv.settings", "com.android.tv.settings.MainSettings"))
+            } catch (_: Exception) {
+                Toast.makeText(this, "TV Settings could not be opened.", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
     private fun refreshClock() {
-        clock.text = clockFormat.format(Date())
-        date.text = dateFormat.format(Date())
+        val now = Date()
+        clock.text = clockFormat.format(now)
+        date.text = dateFormat.format(now)
     }
 
-    private fun glassBubble() = GradientDrawable(
+    private fun glassBubble(selected: Boolean): GradientDrawable = GradientDrawable(
         GradientDrawable.Orientation.TL_BR,
-        intArrayOf(Color.rgb(66, 66, 66), Color.rgb(24, 24, 24), Color.rgb(8, 8, 8))
-    ).apply { shape = GradientDrawable.OVAL; setStroke(dp(1), Color.rgb(75, 75, 75)) }
+        intArrayOf(
+            Color.argb(if (selected) 105 else 82, 170, 170, 170),
+            Color.argb(if (selected) 78 else 58, 75, 75, 75),
+            Color.argb(210, 12, 12, 12)
+        )
+    ).apply {
+        shape = GradientDrawable.OVAL
+        setStroke(dp(if (selected) 2 else 1), Color.argb(if (selected) 190 else 115, 225, 225, 225))
+    }
 
     private fun text(value: String, size: Int, color: Int, bold: Boolean) =
         TextView(this).apply {
