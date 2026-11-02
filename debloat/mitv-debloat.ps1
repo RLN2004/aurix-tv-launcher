@@ -11,6 +11,8 @@
   Tiers
     1  Low risk      Unused apps (Prime Video, Play Games, gallery, music, ...)
     2  Feeds / ads   Recommendation and content-feed services
+    4  Optional      Each one removes a feature (casting, voice search, phone
+                      remote, OTA updates...). Opt in with -Tier 4.
     3  Launcher/store Stock launcher + Play Store. ONLY after A.U.R.I.X. is the
                       default Home app. The script refuses otherwise.
 
@@ -18,6 +20,7 @@
   .\mitv-debloat.ps1                  # dry run, tiers 1 and 2
   .\mitv-debloat.ps1 -Apply           # disable tiers 1 and 2
   .\mitv-debloat.ps1 -Report          # list other candidates you may have missed
+  .\mitv-debloat.ps1 -Tier 4 -Apply   # optional, feature-removing tier
   .\mitv-debloat.ps1 -Tier 3 -Apply   # launcher/store (needs A.U.R.I.X. as Home)
   .\mitv-debloat.ps1 -Restore -Apply  # re-enable everything this script disables
 #>
@@ -53,6 +56,12 @@ $Candidates = @{
         'com.android.printspooler'
         'com.android.camera2'
         'com.android.smspush'
+        'com.google.android.feedback'
+        'com.google.android.syncadapters.calendar'
+        'com.google.android.onetimeinitializer'
+        'com.google.android.tungsten.setupwraith'      # first-boot setup wizard
+        'com.xiaomi.android.tvsetup.partnercustomizer' # first-boot setup
+        'com.mitv.dream'                                # Mi screensaver
     )
     2 = @(
         'com.google.android.tvrecommendations'
@@ -66,6 +75,17 @@ $Candidates = @{
         'com.xiaomi.mitv.tvmanager'           # may affect Mi updates/cleaner
         'com.android.vending'                 # Play Store: no more app installs/updates
     )
+    4 = @(
+        'com.google.android.apps.mediashell'  # Chromecast receiver: no casting to the TV
+        'com.google.android.katniss'          # Google Assistant / voice search
+        'com.google.android.marvin.talkback'  # screen reader
+        'com.google.android.tts'              # text-to-speech (used by TalkBack)
+        'com.google.android.tv.remote.service' # phone-as-remote (Google TV app)
+        'com.google.android.partnersetup'
+        'com.xiaomi.wfdsinkhelperservice'     # Miracast / screen mirroring
+        'com.mitv.milinkservice'              # Mi Home / MiLink phone projection
+        'com.xiaomi.mitv.updateservice'       # OTA updates (also stops security updates)
+    )
 }
 
 # Never touched, even if somebody adds them to a list above.
@@ -74,6 +94,11 @@ $Protected = @(
     'com.google.android.youtube.tv', 'com.google.android.gms', 'com.google.android.gsf',
     'com.android.tv', 'com.android.tv.settings', 'com.android.providers.tv',
     'com.android.providers.settings', 'com.android.systemui', 'com.android.settings',
+    'com.google.android.packageinstaller', 'com.google.android.permissioncontroller',
+    'com.google.android.webview', 'com.google.android.inputmethod.latin',
+    'com.google.android.sss.authbridge', 'com.google.android.ext.services',
+    'com.google.android.ext.shared', 'com.google.android.tv.frameworkpackagestubs',
+    'com.mi.bluetooth', 'com.mitv.bspfactoryservice', 'com.mitv.tvlock', 'com.xiaomi.mitv.res',
     'com.droidlogic.tvinput', 'com.droidlogic.droidlivetv', 'com.droidlogic.tv.settings'
 )
 function Test-Protected([string]$pkg) {
