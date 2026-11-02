@@ -79,7 +79,7 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE)
             textSize = 13f
             letterSpacing = 0.12f
-            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            typeface = customFont()
             isFocusable = true
             setOnClickListener { openSettings() }
             setOnFocusChangeListener { v, focused -> v.alpha = if (focused) 1f else 0.78f }
@@ -201,9 +201,16 @@ class MainActivity : Activity() {
             text = value
             textSize = size.toFloat()
             setTextColor(color)
-            typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
+            typeface = if (bold) customFont() else Typeface.create("sans-serif", Typeface.NORMAL)
             includeFontPadding = false
         }
+
+    private fun customFont(): Typeface = try {
+        if (android.os.Build.VERSION.SDK_INT >= 26) resources.getFont(R.font.arial_black)
+        else Typeface.create("sans-serif-black", Typeface.NORMAL)
+    } catch (_: Exception) {
+        Typeface.create("sans-serif-black", Typeface.NORMAL)
+    }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
