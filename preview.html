@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A.U.R.I.X. TV — UI Preview</title>
+<style>
+  @font-face {
+    font-family: "Arial Black";
+    src: url("./app/src/main/res/font/arial_black.ttf") format("truetype");
+    font-display: swap;
+  }
+
+  /* Keep these values aligned with MainActivity.kt. Android dp/sp are
+     represented as CSS px here for a 1:1 layout-design reference. */
+  :root {
+    --black: #000;
+    --white: #fff;
+    --brand-left: 42px;
+    --brand-top: 24px;
+    --clock-top: 20px;
+    --clock-right: 42px;
+    --banner-width: 610px;
+    --banner-height: 270px;
+    --banner-bottom-offset: 72.5px;
+    --selected-size: 155px;
+    --side-size: 140px;
+    --selected-bottom: 12px;
+    --side-bottom: -70px;
+    --side-offset: 238px;
+    --motion-ms: 230ms;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--black);
+    color: var(--white);
+  }
+  body {
+    font-family: Arial, sans-serif;
+    user-select: none;
+  }
+  .screen {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    min-height: 420px;
+    overflow: hidden;
+    background: #000;
+  }
+  .brand {
+    position: absolute;
+    top: var(--brand-top);
+    left: var(--brand-left);
+    height: 54px;
+    display: flex;
+    align-items: center;
+    padding: 5px 12px;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    color: #fff;
+    font: 25px/1 "Arial Black", "Arial", sans-serif;
+    letter-spacing: .04em;
+    outline: none;
+    cursor: default;
+  }
+  .brand.focused {
+    background: rgba(255,255,255,.215);
+    border-color: #fff;
+  }
+  .time-box {
+    position: absolute;
+    top: var(--clock-top);
+    right: var(--clock-right);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    color: #fff;
+    font-family: "Arial Black", Arial, sans-serif;
+    font-weight: 900;
+    line-height: 1.18;
+    white-space: nowrap;
+  }
+  #clock { font-size: 27px; }
+  #date { font-size: 18px; }
+  .banner {
+    position: absolute;
+    left: 50%;
+    top: calc(50% - var(--banner-bottom-offset));
+    width: min(var(--banner-width), 70vw);
+    height: min(var(--banner-height), 34vh);
+    object-fit: contain;
+    transform: translate(-50%, -50%);
+  }
+  .selector {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .bubble {
+    position: absolute;
+    left: 50%;
+    bottom: var(--side-bottom);
+    width: var(--side-size);
+    height: var(--side-size);
+    padding: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(225,225,225,.45);
+    background: linear-gradient(135deg,
+      rgba(170,170,170,.32) 0%,
+      rgba(75,75,75,.23) 52%,
+      rgba(12,12,12,.82) 100%);
+    box-shadow: 0 4px 12px rgba(0,0,0,.45);
+    object-fit: contain;
+    transform: translateX(-50%);
+    opacity: .82;
+    transition:
+      left var(--motion-ms) ease,
+      bottom var(--motion-ms) ease,
+      width var(--motion-ms) ease,
+      height var(--motion-ms) ease,
+      padding var(--motion-ms) ease,
+      opacity var(--motion-ms) ease,
+      border-color var(--motion-ms) ease,
+      background var(--motion-ms) ease;
+  }
+  .bubble.selected {
+    width: var(--selected-size);
+    height: var(--selected-size);
+    bottom: var(--selected-bottom);
+    padding: 48px 48px 48px 32px;
+    border: 2px solid rgba(225,225,225,.745);
+    background: linear-gradient(135deg,
+      rgba(170,170,170,.41) 0%,
+      rgba(75,75,75,.305) 52%,
+      rgba(12,12,12,.82) 100%);
+    opacity: 1;
+    z-index: 2;
+  }
+  .bubble.pos-left { left: calc(50% - var(--side-offset)); }
+  .bubble.pos-right { left: calc(50% + var(--side-offset)); }
+  .bubble.pos-center { left: 50%; }
+
+  .hint {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,.42);
+    font: 12px Arial, sans-serif;
+    letter-spacing: .08em;
+    opacity: 0;
+    transition: opacity .2s ease;
+    pointer-events: none;
+  }
+  .screen:hover .hint { opacity: 1; }
+  .notice {
+    position: absolute;
+    left: 50%;
+    top: 70%;
+    transform: translate(-50%, 0);
+    padding: 10px 16px;
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 6px;
+    background: rgba(25,25,25,.92);
+    color: #fff;
+    font: 14px Arial, sans-serif;
+    opacity: 0;
+    transition: opacity .15s ease;
+    pointer-events: none;
+  }
+  .notice.visible { opacity: 1; }
+  @media (max-width: 760px) {
+    :root {
+      --brand-left: 18px;
+      --clock-right: 18px;
+      --side-offset: min(26vw, 185px);
+      --banner-width: 82vw;
+    }
+    .brand { font-size: 20px; }
+    #clock { font-size: 22px; }
+    #date { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<main class="screen" id="screen" aria-label="A.U.R.I.X. TV launcher preview">
+  <div class="brand" id="brand" tabindex="-1">A.U.R.I.X</div>
+
+  <div class="time-box">
+    <div id="clock">12 : 00 PM</div>
+    <div id="date">02 / 11 / 2026</div>
+  </div>
+
+  <img class="banner" id="banner"
+       src="./app/src/main/res/drawable/youtube_banner.webp"
+       alt="Selected app banner">
+
+  <div class="selector" id="selector">
+    <img class="bubble" data-index="0"
+         src="./app/src/main/res/drawable/netflix_logo.webp" alt="Netflix">
+    <img class="bubble selected" data-index="1"
+         src="./app/src/main/res/drawable/youtube_logo.webp" alt="YouTube">
+    <img class="bubble" data-index="2"
+         src="./app/src/main/res/drawable/tv_logo.webp" alt="TV">
+  </div>
+
+  <div class="hint">← / → SELECT &nbsp; · &nbsp; ↑ SETTINGS &nbsp; · &nbsp; ENTER OPEN</div>
+  <div class="notice" id="notice" role="status"></div>
+</main>
+
+<script>
+(() => {
+  const apps = [
+    { name: "NETFLIX", logo: "./app/src/main/res/drawable/netflix_logo.webp",
+      banner: "./app/src/main/res/drawable/netflix_banner.webp" },
+    { name: "YouTube", logo: "./app/src/main/res/drawable/youtube_logo.webp",
+      banner: "./app/src/main/res/drawable/youtube_banner.webp" },
+    { name: "TV", logo: "./app/src/main/res/drawable/tv_logo.webp",
+      banner: "./app/src/main/res/drawable/tv_banner.webp" }
+  ];
+
+  let selected = 1;
+  let settingsFocused = false;
+  const bubbles = [...document.querySelectorAll(".bubble")];
+  const brand = document.getElementById("brand");
+  const banner = document.getElementById("banner");
+  const notice = document.getElementById("notice");
+  let noticeTimer;
+
+  function updateClock() {
+    const now = new Date();
+    document.getElementById("clock").textContent =
+      now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })
+        .replace(/(\d{1,2}):(\d{2})/, "$1 : $2").toUpperCase();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    document.getElementById("date").textContent = dd + " / " + mm + " / " + yyyy;
+  }
+
+  function updateSelector() {
+    banner.src = apps[selected].banner;
+    bubbles.forEach((bubble, index) => {
+      const relative = (index - selected + apps.length) % apps.length;
+      bubble.classList.toggle("selected", relative === 0);
+      bubble.classList.remove("pos-left", "pos-right", "pos-center");
+      bubble.classList.add(relative === 0 ? "pos-center" :
+        relative === 1 ? "pos-left" : "pos-right");
+    });
+  }
+
+  function showNotice(message) {
+    notice.textContent = message;
+    notice.classList.add("visible");
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => notice.classList.remove("visible"), 1500);
+  }
+
+  function setSettingsFocus(value) {
+    settingsFocused = value;
+    brand.classList.toggle("focused", value);
+  }
+
+  document.addEventListener("keydown", event => {
+    const key = event.key;
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter", " "].includes(key)) {
+      event.preventDefault();
+    }
+    if (key === "ArrowUp") {
+      setSettingsFocus(true);
+    } else if (key === "ArrowDown") {
+      setSettingsFocus(false);
+    } else if (key === "ArrowLeft" && !settingsFocused) {
+      selected = (selected - 1 + apps.length) % apps.length;
+      updateSelector();
+    } else if (key === "ArrowRight" && !settingsFocused) {
+      selected = (selected + 1) % apps.length;
+      updateSelector();
+    } else if (key === "Enter" || key === " ") {
+      showNotice(settingsFocused ? "TV Settings — native app action" :
+        "Launch " + apps[selected].name + " — native app action");
+    } else if (key === "Escape" || key === "Backspace") {
+      setSettingsFocus(false);
+    }
+  });
+
+  updateClock();
+  updateSelector();
+  setInterval(updateClock, 1000);
+})();
+</script>
+</body>
+</html>
