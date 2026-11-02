@@ -66,8 +66,8 @@ class MainActivity : Activity() {
     private var settingsFocused = false
     private var accentAnimator: ValueAnimator? = null
 
-    private val clockFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
-    private val dateFormat = SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault())
+    private val clockFormat = SimpleDateFormat("hh : mm a", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("dd / MM / yyyy", Locale.getDefault())
 
     private val timeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) = refreshClock()
@@ -193,8 +193,9 @@ class MainActivity : Activity() {
         )
         settingsHint = TextView(this).apply {
             text = "Press OK for Settings"
-            textSize = 13f
+            textSize = 12f
             setTextColor(Color.argb(170, 255, 255, 255))
+            typeface = customFont()
             letterSpacing = 0.04f
             visibility = View.INVISIBLE
         }
@@ -207,15 +208,15 @@ class MainActivity : Activity() {
 
         // Top-right: clock and date.
         clock = TextView(this).apply {
-            textSize = 34f
+            textSize = 30f
             setTextColor(Color.WHITE)
-            typeface = Typeface.create("sans-serif-light", Typeface.NORMAL)
+            typeface = customFont()
             includeFontPadding = false
         }
         date = TextView(this).apply {
             textSize = 15f
-            setTextColor(Color.argb(165, 255, 255, 255))
-            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+            setTextColor(Color.argb(190, 255, 255, 255))
+            typeface = customFont()
             includeFontPadding = false
         }
         val timeBox = LinearLayout(this).apply {
@@ -233,9 +234,9 @@ class MainActivity : Activity() {
 
         // Hero: the selected app's name and state.
         heroTag = TextView(this).apply {
-            textSize = 14f
-            letterSpacing = 0.22f
-            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            textSize = 13f
+            letterSpacing = 0.2f
+            typeface = customFont()
         }
         heroName = TextView(this).apply {
             textSize = 58f
@@ -244,8 +245,8 @@ class MainActivity : Activity() {
             includeFontPadding = false
         }
         heroStatus = TextView(this).apply {
-            textSize = 16f
-            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+            textSize = 15f
+            typeface = customFont()
         }
         hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -291,10 +292,10 @@ class MainActivity : Activity() {
             )
             val label = TextView(this).apply {
                 text = app.name
-                textSize = 15f
+                textSize = 14f
                 setTextColor(Color.WHITE)
-                letterSpacing = 0.05f
-                typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+                letterSpacing = 0.04f
+                typeface = customFont()
             }
             tile.addView(
                 label,
@@ -356,11 +357,6 @@ class MainActivity : Activity() {
             val installed = isInstalled(apps[index])
 
             tile.background = tileBackground(active)
-            tile.translationZ = if (active) dp(18).toFloat() else 0f
-            if (Build.VERSION.SDK_INT >= 28) {
-                tile.outlineSpotShadowColor = apps[index].accent
-                tile.outlineAmbientShadowColor = apps[index].accent
-            }
 
             val scale = if (isSelected) 1.1f else 1f
             val alpha = when {
@@ -389,10 +385,10 @@ class MainActivity : Activity() {
         heroTag.text = app.tagline.uppercase(Locale.ROOT)
         heroTag.setTextColor(mix(app.accent, Color.WHITE, 0.35f))
         heroName.text = app.name
-        heroStatus.text = if (installed) "Press OK to open" else "Not installed"
-        heroStatus.setTextColor(
-            if (installed) Color.argb(160, 255, 255, 255) else Color.rgb(255, 193, 7)
-        )
+        // Only shown when the app is missing.
+        heroStatus.text = "Not installed"
+        heroStatus.setTextColor(Color.rgb(255, 193, 7))
+        heroStatus.visibility = if (installed) View.GONE else View.VISIBLE
         if (animate) {
             hero.alpha = 0f
             hero.translationX = -dp(16).toFloat()
@@ -459,17 +455,31 @@ class MainActivity : Activity() {
 
     // --------------------------------------------------------------- helpers
 
-    // Opaque on purpose: the focused tile casts a coloured shadow, which would
-    // show through a translucent background.
-    private fun tileBackground(active: Boolean): GradientDrawable = GradientDrawable(
-        GradientDrawable.Orientation.TOP_BOTTOM,
-        if (active) intArrayOf(Color.rgb(48, 60, 84), Color.rgb(32, 41, 60))
-        else intArrayOf(Color.rgb(25, 32, 46), Color.rgb(18, 24, 35))
-    ).apply {
-        shape = GradientDrawable.RECTANGLE
-        cornerRadius = dp(22).toFloat()
-        if (active) setStroke(dp(3), Color.WHITE)
-        else setStroke(dp(1), Color.argb(46, 255, 255, 255))
+    // Frosted-glass card: translucent white fill, a soft sheen across the top half
+    // and a bright hairline edge. (True background blur needs API 31+, so the
+    // glow in Backdrop shows through the translucent fill instead.)
+    private fun tileBackground(active: Boolean): android.graphics.drawable.Drawable {
+        val radius = dp(22).toFloat()
+        val base = GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            if (active) intArrayOf(Color.argb(105, 255, 255, 255), Color.argb(38, 255, 255, 255))
+            else intArrayOf(Color.argb(54, 255, 255, 255), Color.argb(16, 255, 255, 255))
+        ).apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = radius
+            if (active) setStroke(dp(2), Color.argb(235, 255, 255, 255))
+            else setStroke(dp(1), Color.argb(96, 255, 255, 255))
+        }
+        val sheen = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(Color.argb(if (active) 70 else 44, 255, 255, 255), Color.TRANSPARENT)
+        ).apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = radius - dp(2)
+        }
+        return android.graphics.drawable.LayerDrawable(arrayOf(base, sheen)).apply {
+            setLayerInset(1, dp(2), dp(2), dp(2), dp(66))
+        }
     }
 
     private fun mix(from: Int, to: Int, t: Float): Int = Color.rgb(

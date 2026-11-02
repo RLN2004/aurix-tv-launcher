@@ -26,7 +26,7 @@
     width: 100%; height: 100%; margin: 0; overflow: hidden;
     background: #000; color: #fff;
   }
-  body { font-family: Roboto, "Segoe UI", Arial, sans-serif; user-select: none; }
+  body { font-family: "Arial Black", Arial, sans-serif; user-select: none; }
 
   .screen {
     position: relative; width: 100vw; height: 100vh; min-height: 420px; overflow: hidden;
@@ -46,7 +46,7 @@
   .brand.focused { background: rgba(255,255,255,.18); border-color: #fff; }
   .settings-hint {
     position: absolute; top: 86px; left: 64px;
-    font-size: 13px; letter-spacing: .04em; color: rgba(255,255,255,.67);
+    font-size: 12px; letter-spacing: .04em; color: rgba(255,255,255,.67);
     opacity: 0;
   }
   .settings-hint.visible { opacity: 1; }
@@ -54,18 +54,18 @@
   .time-box {
     position: absolute; top: 30px; right: 56px; text-align: right; white-space: nowrap;
   }
-  #clock { font-size: 34px; font-weight: 300; line-height: 1; }
-  #date { margin-top: 6px; font-size: 15px; line-height: 1; color: rgba(255,255,255,.65); }
+  #clock { font-size: 30px; line-height: 1; white-space: pre; }
+  #date { margin-top: 6px; font-size: 15px; line-height: 1; color: rgba(255,255,255,.75); white-space: pre; }
 
   .hero {
     position: absolute; left: 64px; top: calc((100% - 110px) / 2); transform: translateY(-50%);
     transition: opacity .22s ease, translate .22s ease;
   }
   .hero.swap { opacity: 0; translate: -16px 0; transition: none; }
-  .hero-tag { font-size: 14px; font-weight: 500; letter-spacing: .22em; }
+  .hero-tag { font-size: 13px; letter-spacing: .2em; }
   .hero-name { margin-top: 10px; font: 58px/1 "Arial Black", Arial, sans-serif; }
-  .hero-status { margin-top: 14px; font-size: 16px; color: rgba(255,255,255,.63); }
-  .hero-status.missing { color: #ffc107; }
+  .hero-status { margin-top: 14px; font-size: 15px; color: #ffc107; display: none; }
+  .hero-status.missing { display: block; }
 
   .row {
     position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%);
@@ -73,31 +73,38 @@
   }
   .tile {
     position: relative; width: var(--tile-w); height: var(--tile-h);
-    border-radius: 22px; border: 1px solid rgba(255,255,255,.18);
-    background: linear-gradient(180deg, rgb(25,32,46), rgb(18,24,35));
-    opacity: .78;
+    border-radius: 22px; border: 1px solid rgba(255,255,255,.38);
+    background: linear-gradient(135deg, rgba(255,255,255,.21), rgba(255,255,255,.06));
+    -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+    overflow: hidden; opacity: .85;
     transition: transform var(--motion) ease-out, opacity var(--motion) ease-out,
-                box-shadow var(--motion) ease-out;
+                background var(--motion) ease-out, border-color var(--motion) ease-out;
+  }
+  .tile::before { /* top-half sheen */
+    content: ""; position: absolute; left: 2px; right: 2px; top: 2px; height: 64px;
+    border-radius: 20px; background: linear-gradient(180deg, rgba(255,255,255,.17), transparent);
+    pointer-events: none;
   }
   .tile.selected {
     transform: scale(1.1); opacity: 1;
-    border: 3px solid #fff;
-    background: linear-gradient(180deg, rgb(48,60,84), rgb(32,41,60));
-    box-shadow: 0 14px 34px rgba(var(--accent), .55);
+    border: 2px solid rgba(255,255,255,.92);
+    background: linear-gradient(135deg, rgba(255,255,255,.41), rgba(255,255,255,.15));
   }
-  .tile.dim-focus { border-width: 1px; border-color: rgba(255,255,255,.18);
-    background: linear-gradient(180deg, rgb(25,32,46), rgb(18,24,35)); box-shadow: none; }
+  .tile.selected::before { background: linear-gradient(180deg, rgba(255,255,255,.27), transparent); }
+  .tile.dim-focus { border: 1px solid rgba(255,255,255,.38);
+    background: linear-gradient(135deg, rgba(255,255,255,.21), rgba(255,255,255,.06)); }
+  .tile.dim-focus::before { background: linear-gradient(180deg, rgba(255,255,255,.17), transparent); }
   .tile.missing { opacity: .38; }
   .tile img, .tile svg {
     position: absolute; top: 22px; left: 50%; width: 62px; height: 62px;
     transform: translateX(-50%); object-fit: contain;
   }
-  .tile.selected img, .tile.selected svg { top: 20px; }
+  .tile.selected img, .tile.selected svg { top: 21px; }
   .tile span {
     position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
-    font-size: 15px; font-weight: 500; letter-spacing: .05em;
+    font-size: 14px; letter-spacing: .04em;
   }
-  .tile.selected span { bottom: 14px; }
+  .tile.selected span { bottom: 15px; }
 
   .notice {
     position: absolute; left: 50%; top: 66%; transform: translateX(-50%);
@@ -122,8 +129,8 @@
   <div class="settings-hint" id="settingsHint">Press OK for Settings</div>
 
   <div class="time-box">
-    <div id="clock">12:00 PM</div>
-    <div id="date">Mon, 2 Nov 2026</div>
+    <div id="clock">01 : 47 PM</div>
+    <div id="date">02 / 11 / 2026</div>
   </div>
 
   <div class="hero" id="hero">
@@ -177,11 +184,12 @@
 
   function updateClock() {
     const now = new Date();
+    const pad = n => String(n).padStart(2, "0");
+    const h = now.getHours() % 12 || 12;
     document.getElementById("clock").textContent =
-      now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+      pad(h) + " : " + pad(now.getMinutes()) + " " + (now.getHours() < 12 ? "AM" : "PM");
     document.getElementById("date").textContent =
-      now.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
-        .replace(",", ",");
+      pad(now.getDate()) + " / " + pad(now.getMonth() + 1) + " / " + now.getFullYear();
   }
 
   function render(animateHero) {
@@ -202,7 +210,7 @@
     tag.style.filter = "brightness(1.35)";
     document.getElementById("heroName").textContent = app.name;
     const status = document.getElementById("heroStatus");
-    status.textContent = app.installed ? "Press OK to open" : "Not installed";
+    status.textContent = "Not installed";
     status.classList.toggle("missing", !app.installed);
 
     if (animateHero) {
