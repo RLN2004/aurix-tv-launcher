@@ -11,6 +11,7 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -19,22 +20,28 @@ import java.util.Date
 import java.util.Locale
 
 class MainActivity : Activity() {
-    private data class AppTile(val name: String, val packageName: String, val mark: String, val color: Int)
+    private data class AppTile(
+        val name: String,
+        val packageName: String,
+        val logo: Int,
+        val banner: Int,
+        val accent: Int
+    )
 
     private val apps = listOf(
-        AppTile("NETFLIX", "com.netflix.ninja", "N", Color.rgb(229, 9, 20)),
-        AppTile("YouTube", "com.google.android.youtube.tv", "▶", Color.rgb(255, 65, 55)),
-        AppTile("TV", "com.android.tv", "▰", Color.rgb(90, 160, 255))
+        AppTile("NETFLIX", "com.netflix.ninja", R.drawable.netflix_logo, R.drawable.netflix_banner, Color.rgb(229, 9, 20)),
+        AppTile("YouTube", "com.google.android.youtube.tv", R.drawable.youtube_logo, R.drawable.youtube_banner, Color.WHITE),
+        AppTile("TV", "com.android.tv", R.drawable.tv_logo, R.drawable.tv_banner, Color.WHITE)
     )
 
     private lateinit var root: FrameLayout
     private lateinit var title: TextView
+    private lateinit var banner: ImageView
     private lateinit var clock: TextView
     private lateinit var date: TextView
-    private val bubbles = mutableListOf<TextView>()
+    private val bubbles = mutableListOf<ImageView>()
     private var selected = 0
 
-    private val white = Color.WHITE
     private val clockFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
     private val dateFormat = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
 
@@ -91,24 +98,34 @@ class MainActivity : Activity() {
         timeParams.setMargins(0, dp(8), dp(24), 0)
         root.addView(timeBox, timeParams)
 
-        title = text("", 42, Color.WHITE, true).apply { gravity = Gravity.CENTER; includeFontPadding = false }
-        val titleParams = FrameLayout.LayoutParams(-1, dp(100), Gravity.CENTER)
-        titleParams.bottomMargin = dp(52)
+        banner = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = "Selected app banner"
+        }
+        val bannerParams = FrameLayout.LayoutParams(dp(360), dp(170), Gravity.CENTER)
+        bannerParams.bottomMargin = dp(115)
+        root.addView(banner, bannerParams)
+
+        title = text("", 27, Color.WHITE, true).apply {
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+        }
+        val titleParams = FrameLayout.LayoutParams(-1, dp(48), Gravity.CENTER)
+        titleParams.topMargin = dp(115)
         root.addView(title, titleParams)
 
         apps.forEachIndexed { index, app ->
-            val bubble = TextView(this).apply {
-                text = app.mark
-                textSize = if (app.mark == "▶") 17f else 21f
-                gravity = Gravity.CENTER
-                setTextColor(app.color)
-                typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            val bubble = ImageView(this).apply {
+                setImageResource(app.logo)
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setPadding(dp(13), dp(13), dp(13), dp(13))
                 background = glassBubble()
                 elevation = dp(5).toFloat()
-                isFocusable = true
+                contentDescription = app.name
+                isFocusable = false
                 setOnClickListener { selected = index; updateSelector(true); launchSelected() }
             }
-            val params = FrameLayout.LayoutParams(dp(58), dp(58), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
+            val params = FrameLayout.LayoutParams(dp(62), dp(62), Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL)
             params.bottomMargin = dp(8)
             root.addView(bubble, params)
             bubbles.add(bubble)
@@ -128,19 +145,24 @@ class MainActivity : Activity() {
     private fun updateSelector(animate: Boolean) {
         val app = apps[selected]
         title.text = app.name
-        title.setTextColor(if (app.name == "NETFLIX") app.color else Color.WHITE)
+        title.setTextColor(app.accent)
+        banner.setImageResource(app.banner)
+
         bubbles.forEachIndexed { index, bubble ->
             val relative = (index - selected + apps.size) % apps.size
-            val x = when (relative) { 1 -> -dp(57).toFloat(); 2 -> dp(57).toFloat(); else -> 0f }
-            val y = if (relative == 0) -dp(30).toFloat() else 0f
+            val x = when (relative) { 1 -> -dp(64).toFloat(); 2 -> dp(64).toFloat(); else -> 0f }
+            val y = if (relative == 0) -dp(28).toFloat() else 0f
             val scale = if (relative == 0) 1.12f else 0.88f
             val alpha = if (relative == 0) 1f else 0.72f
             if (animate) {
                 bubble.animate().translationX(x).translationY(y).scaleX(scale).scaleY(scale).alpha(alpha)
                     .setDuration(210).setInterpolator(android.view.animation.DecelerateInterpolator()).start()
             } else {
-                bubble.translationX = x; bubble.translationY = y
-                bubble.scaleX = scale; bubble.scaleY = scale; bubble.alpha = alpha
+                bubble.translationX = x
+                bubble.translationY = y
+                bubble.scaleX = scale
+                bubble.scaleY = scale
+                bubble.alpha = alpha
             }
         }
     }
@@ -176,7 +198,9 @@ class MainActivity : Activity() {
 
     private fun text(value: String, size: Int, color: Int, bold: Boolean) =
         TextView(this).apply {
-            text = value; textSize = size.toFloat(); setTextColor(color)
+            text = value
+            textSize = size.toFloat()
+            setTextColor(color)
             typeface = Typeface.create("sans-serif", if (bold) Typeface.BOLD else Typeface.NORMAL)
             includeFontPadding = false
         }
