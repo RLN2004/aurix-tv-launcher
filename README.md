@@ -2,8 +2,20 @@
 
 A minimal native Kotlin launcher for the Redmi `MiTV-AXFR0` / Android 11 device.
 It has no network permission, analytics, ads, recommendation feed, WebView, or
-third-party runtime libraries. The four tiles are TV/HDMI, YouTube, Hotstar,
-and Netflix.
+third-party runtime libraries. The four tiles are YouTube, TV/HDMI, Netflix,
+and Browser. The Browser tile launches Rhenium (`com.nitesh.rhenium`), which
+must be installed separately.
+
+## Browser note
+
+The Browser tile targets Rhenium, an independent Android TV browser built on
+Brave/Chromium technology with a TV remote-oriented interface. It is not the
+official Brave Android app or an official Brave TV release. Its current
+pre-release states Android 10 (API 29) as its minimum; this TV runs Android 11.
+The project reports ARM32 physical-device testing, while ARM64 hardware support
+remains unverified. Check the TV ABI before choosing its APK.
+
+Project: https://github.com/smolcars/rhenium
 
 ## Important HDMI note
 
@@ -23,123 +35,23 @@ adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c 
 Do not disable `com.droidlogic.tvinput`, `com.droidlogic`, or Android TV system
 packages. This launcher does not modify or replace those services.
 
-## Build on Windows
+## Build without Android Studio
 
-1. Install Android Studio (current stable) and its Android SDK.
-2. Open this folder in Android Studio.
-3. Allow Gradle sync. Install Android SDK Platform 35 if prompted.
-4. Use JDK 17 (Android Studio's bundled JBR is suitable).
-5. Select **Build > Build Bundle(s) / APK(s) > Build APK(s)**.
-6. The APK will be at:
+The GitHub Actions workflow builds the APK on GitHub-hosted runners.
 
-   `app\build\outputs\apk\debug\app-debug.apk`
-
-You can also build from PowerShell in this folder after Android Studio has
-installed the SDK and Gradle dependencies:
-
-```powershell
-.\gradlew.bat assembleDebug
-```
-
-This project ZIP does not include the Gradle wrapper executable/JAR. Use the
-Android Studio Gradle sync/build UI, or generate a wrapper with the Gradle
-installation available on your machine (`gradle wrapper`).
-
-## Install and test over ADB
-
-Enable Network debugging / ADB debugging on the TV and connect:
-
-```powershell
-adb connect 192.168.1.6:5555
-adb devices
-adb install -r .\app\build\outputs\apk\debug\app-debug.apk
-```
-
-Launch it once without changing the default Home app:
-
-```powershell
-adb shell monkey -p com.aurix.tv 1
-```
-
-Test all four tiles with the TV remote. Check the TV/HDMI tile and verify
-Airtel HDMI playback before changing the default launcher.
-
-## Set A.U.R.I.X. as Home
-
-First inspect the Home activities:
-
-```powershell
-adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME
-adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME com.aurix.tv
-```
-
-If the TV supports the command, set A.U.R.I.X. as Home:
-
-```powershell
-adb shell cmd package set-home-activity com.aurix.tv/.MainActivity
-```
-
-Some Android TV firmware does not expose `set-home-activity`; if the command
-fails, press Home and choose A.U.R.I.X. as the default launcher if prompted.
-Do not disable the stock launcher.
-
-## Roll back
-
-```powershell
-adb shell cmd package set-home-activity com.google.android.tvlauncher/.MainActivity
-```
-
-If that command is unsupported, use Settings > Apps > Default apps > Home app
-(if available), or clear A.U.R.I.X. defaults:
-
-```powershell
-adb shell pm clear com.aurix.tv
-adb uninstall com.aurix.tv
-```
-
-The original Google launcher remains installed and enabled.
-
-## Package IDs used
-
-- YouTube: `com.google.android.youtube.tv`
-- Hotstar: `in.startv.hotstar` (verify on this firmware)
-- Netflix: `com.netflix.ninja`
-- Android TV app: `com.android.tv`
-
-If an app tile reports that its app is missing/disabled, inspect the package:
-
-```powershell
-adb shell pm list packages -d
-adb shell pm list packages | findstr /i "youtube hotstar netflix"
-```
-
-Then enable the relevant installed package with `adb shell pm enable PACKAGE`.
-
-
-## Build without installing Android Studio (GitHub Actions)
-
-This project includes `.github/workflows/build-apk.yml`. GitHub builds the APK
-on its hosted runner, so Android Studio and the Android SDK are not needed on
-your laptop.
-
-1. Create a new GitHub repository (private is fine), e.g. `aurix-tv-launcher`.
-2. Upload the contents of this project folder to the repository root. Make sure
-   `.github/workflows/build-apk.yml` is included. GitHub's web upload can upload
-   files/folders; if the hidden `.github` folder is not included, create the
-   workflow file in GitHub using **Add file > Create new file** and use the
-   exact path `.github/workflows/build-apk.yml`.
-3. Open the repository's **Actions** tab.
-4. Select **Build AURIX TV APK**, then **Run workflow** (or push to `main`).
-5. When the run finishes, open it and download the
+1. Open the repository's **Actions** tab.
+2. Select **Build AURIX TV APK**, then **Run workflow** (or push to `main`).
+3. When the run finishes, open it and download the
    `aurix-tv-debug-apk` artifact. Extract it to get `app-debug.apk`.
 
-Then install with ADB as described above:
+## Install and test over ADB
 
 ```powershell
 adb connect 192.168.1.6:5555
 adb install -r .\app-debug.apk
-adb shell monkey -p com.aurix.tv 1
+adb shell am start -n com.aurix.tv/.MainActivity
 ```
 
-GitHub Actions availability and usage limits depend on your GitHub account and
-repository settings. Do not put secrets or unrelated project code in this repo.
+Install Rhenium separately before testing the Browser tile. Test all four tiles
+with the TV remote. Check the TV/HDMI tile and verify HDMI playback before
+changing the default launcher. Do not disable the stock launcher.
