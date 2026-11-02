@@ -7,9 +7,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
-import android.view.KeyEvent
 import android.view.View
-import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -86,10 +84,10 @@ class MainActivity : Activity() {
             gravity = Gravity.CENTER
         }
         val tiles = listOf(
-            Tile("TV / HDMI", "INPUT", "com.android.tv", R.drawable.tile_tv, "TV"),
             Tile("YouTube", "VIDEO", "com.google.android.youtube.tv", R.drawable.tile_youtube, "YT"),
-            Tile("Hotstar", "STREAMING", "in.startv.hotstar", R.drawable.tile_hotstar, "H"),
-            Tile("Netflix", "STREAMING", "com.netflix.ninja", R.drawable.tile_netflix, "N")
+            Tile("TV / HDMI", "INPUT", "com.android.tv", R.drawable.tile_tv, "TV"),
+            Tile("Netflix", "STREAMING", "com.netflix.ninja", R.drawable.tile_netflix, "N"),
+            Tile("Browser", "WEB", "com.nitesh.rhenium", R.drawable.tile_browser, "WEB")
         )
         tiles.forEachIndexed { index, tile ->
             val view = makeTile(tile)
@@ -171,7 +169,6 @@ class MainActivity : Activity() {
 
     private fun refreshClock() {
         clock.text = clockFormat.format(Date())
-        // Clock refreshes whenever the launcher resumes; no timer/service is kept alive.
     }
 
     private fun label(text: String, size: Int, color: Int, bold: Boolean): TextView =
