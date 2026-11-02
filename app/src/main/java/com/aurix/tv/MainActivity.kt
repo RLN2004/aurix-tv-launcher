@@ -107,7 +107,16 @@ class MainActivity : Activity() {
             isFocusable = true
             isFocusableInTouchMode = true
             setOnClickListener { openSettings() }
-            setOnFocusChangeListener { v, focused -> v.alpha = if (focused) 1f else 0.82f }
+            setPadding(dp(12), dp(5), dp(12), dp(5))
+            setOnFocusChangeListener { v, focused ->
+                v.alpha = 1f
+                v.background = if (focused) GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = dp(8).toFloat()
+                    setColor(Color.argb(55, 255, 255, 255))
+                    setStroke(dp(2), Color.WHITE)
+                } else null
+            }
             contentDescription = "A.U.R.I.X Settings"
         }
         val brandParams = FrameLayout.LayoutParams(-2, dp(54), Gravity.TOP or Gravity.START)
@@ -173,11 +182,11 @@ class MainActivity : Activity() {
         bubbles.forEachIndexed { index, bubble ->
             val relative = (index - selected + apps.size) % apps.size
             val isSelected = relative == 0
-            val size = if (isSelected) dp(230) else dp(210)
+            val size = if (isSelected) dp(155) else dp(140)
             val params = bubble.layoutParams as FrameLayout.LayoutParams
             params.width = size
             params.height = size
-            params.bottomMargin = if (isSelected) dp(18) else -dp(105)
+            params.bottomMargin = if (isSelected) dp(12) else -dp(70)
             bubble.layoutParams = params
 
             val x = when (relative) {
@@ -187,7 +196,7 @@ class MainActivity : Activity() {
             }
             bubble.background = glassBubble(isSelected)
             bubble.setPadding(
-                if (isSelected) dp(48) else dp(42),
+                if (isSelected) dp(32) else dp(28),
                 if (isSelected) dp(48) else dp(42),
                 if (isSelected) dp(48) else dp(42),
                 if (isSelected) dp(48) else dp(42)
