@@ -322,10 +322,9 @@ class MainActivity : Activity() {
 
     private fun applySettingsFocus() {
         if (settingsFocused) {
-            brandSlot.background = glowDrawable(dp(12).toFloat(), 16, 4, true)
-            brand.setShadowLayer(dp(14).toFloat(), 0f, 0f, Color.WHITE)
+            // Text glow only: no box or ring around the label.
+            brand.setShadowLayer(dp(16).toFloat(), 0f, 0f, Color.WHITE)
         } else {
-            brandSlot.background = null
             brand.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
         }
     }
@@ -339,7 +338,7 @@ class MainActivity : Activity() {
             val installed = isInstalled(apps[index])
 
             cards[index].background = tileBackground(active)
-            slot.background = if (active) glowDrawable(dp(22).toFloat(), GLOW_PAD, 5, false) else null
+            slot.background = if (active) glowDrawable(dp(22).toFloat(), GLOW_PAD, 5) else null
 
             val scale = if (isSelected) 1.08f else 1f
             val alpha = when {
@@ -423,14 +422,14 @@ class MainActivity : Activity() {
     // --------------------------------------------------------------- helpers
 
     // Frosted-glass card: translucent white fill, a soft sheen across the top half
-    // and a bright hairline edge. (True background blur needs API 31+; on a black
+    // and a bright hairline edge. The fill is identical whether or not the card is
+    // active; only the border (and the glow outside it) changes. (True background blur needs API 31+; on a black
     // background the translucent fill reads as glass.)
     private fun tileBackground(active: Boolean): Drawable {
         val radius = dp(22).toFloat()
         val base = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
-            if (active) intArrayOf(Color.argb(105, 255, 255, 255), Color.argb(38, 255, 255, 255))
-            else intArrayOf(Color.argb(54, 255, 255, 255), Color.argb(16, 255, 255, 255))
+            intArrayOf(Color.argb(54, 255, 255, 255), Color.argb(16, 255, 255, 255))
         ).apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = radius
@@ -439,7 +438,7 @@ class MainActivity : Activity() {
         }
         val sheen = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(Color.argb(if (active) 70 else 44, 255, 255, 255), Color.TRANSPARENT)
+            intArrayOf(Color.argb(44, 255, 255, 255), Color.TRANSPARENT)
         ).apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = radius - dp(2)
@@ -453,13 +452,13 @@ class MainActivity : Activity() {
      * A soft white glow made of concentric rounded outlines that fade outwards. It fills a
      * slot whose padding is [padDp], so the glow hugs the edge of the view inside it.
      */
-    private fun glowDrawable(innerRadius: Float, padDp: Int, steps: Int, bright: Boolean): Drawable {
+    private fun glowDrawable(innerRadius: Float, padDp: Int, steps: Int): Drawable {
         val ring = dp(3)
         val pad = dp(padDp)
         val layers = Array<Drawable>(steps) { j ->
             val inset = pad - ring / 2 - ring * (steps - 1 - j)
             val fade = (j + 1f) / steps
-            val alpha = ((if (bright) 140 else 125) * fade * fade).toInt()
+            val alpha = (125 * fade * fade).toInt()
             GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
                 setColor(Color.TRANSPARENT)
