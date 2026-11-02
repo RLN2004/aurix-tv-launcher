@@ -14,10 +14,9 @@
   /* Values mirror MainActivity.kt. Android dp is shown as CSS px, designed for
      a 960x540 dp screen (a 1080p TV at 320 dpi). */
   :root {
-    --accent: 255, 64, 64;
     --tile-w: 190px;
     --tile-h: 132px;
-    --tile-gap: 28px;
+    --tile-gap: 36px;
     --motion: 180ms;
   }
 
@@ -30,12 +29,7 @@
 
   .screen {
     position: relative; width: 100vw; height: 100vh; min-height: 420px; overflow: hidden;
-    background: linear-gradient(180deg, rgb(13,20,32), rgb(4,6,10));
-  }
-  .glow {
-    position: absolute; inset: 0;
-    background: radial-gradient(circle at 20% 34%, rgba(var(--accent), .36), transparent 65vw);
-    transition: background .38s ease;
+    background: #000;
   }
 
   .brand {
@@ -43,14 +37,10 @@
     padding: 8px 14px; border: 2px solid transparent; border-radius: 12px;
     font: 22px/1.3 "Arial Black", Arial, sans-serif; letter-spacing: .08em;
   }
-  .brand.focused { background: rgba(255,255,255,.18); border-color: #fff; }
-  .settings-hint {
-    position: absolute; top: 86px; left: 64px;
-    font-size: 12px; letter-spacing: .04em; color: rgba(255,255,255,.67);
-    opacity: 0;
+  .brand.focused {
+    text-shadow: 0 0 6px #fff, 0 0 16px rgba(255,255,255,.8);
+    box-shadow: 0 0 8px 2px rgba(255,255,255,.45), 0 0 26px 6px rgba(255,255,255,.22);
   }
-  .settings-hint.visible { opacity: 1; }
-
   .time-box {
     position: absolute; top: 30px; right: 56px; text-align: right; white-space: nowrap;
   }
@@ -62,8 +52,7 @@
     transition: opacity .22s ease, translate .22s ease;
   }
   .hero.swap { opacity: 0; translate: -16px 0; transition: none; }
-  .hero-tag { font-size: 13px; letter-spacing: .2em; }
-  .hero-name { margin-top: 10px; font: 58px/1 "Arial Black", Arial, sans-serif; }
+  .hero-name { margin-top: 0; font: 58px/1 "Arial Black", Arial, sans-serif; }
   .hero-status { margin-top: 14px; font-size: 15px; color: #ffc107; display: none; }
   .hero-status.missing { display: block; }
 
@@ -76,7 +65,7 @@
     border-radius: 22px; border: 1px solid rgba(255,255,255,.38);
     background: linear-gradient(135deg, rgba(255,255,255,.21), rgba(255,255,255,.06));
     -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
-    overflow: hidden; opacity: .85;
+    overflow: hidden; opacity: .8;
     transition: transform var(--motion) ease-out, opacity var(--motion) ease-out,
                 background var(--motion) ease-out, border-color var(--motion) ease-out;
   }
@@ -86,12 +75,14 @@
     pointer-events: none;
   }
   .tile.selected {
-    transform: scale(1.1); opacity: 1;
-    border: 2px solid rgba(255,255,255,.92);
+    transform: scale(1.08); opacity: 1;
+    border: 2px solid rgba(255,255,255,.94);
     background: linear-gradient(135deg, rgba(255,255,255,.41), rgba(255,255,255,.15));
+    box-shadow: 0 0 4px 1px rgba(255,255,255,.6), 0 0 14px 3px rgba(255,255,255,.35),
+                0 0 30px 6px rgba(255,255,255,.18);
   }
   .tile.selected::before { background: linear-gradient(180deg, rgba(255,255,255,.27), transparent); }
-  .tile.dim-focus { border: 1px solid rgba(255,255,255,.38);
+  .tile.dim-focus { border: 1px solid rgba(255,255,255,.38); box-shadow: none;
     background: linear-gradient(135deg, rgba(255,255,255,.21), rgba(255,255,255,.06)); }
   .tile.dim-focus::before { background: linear-gradient(180deg, rgba(255,255,255,.17), transparent); }
   .tile.missing { opacity: .38; }
@@ -123,10 +114,8 @@
 </head>
 <body>
 <main class="screen" id="screen" aria-label="A.U.R.I.X. TV launcher preview">
-  <div class="glow" id="glow"></div>
 
   <div class="brand" id="brand">A.U.R.I.X</div>
-  <div class="settings-hint" id="settingsHint">Press OK for Settings</div>
 
   <div class="time-box">
     <div id="clock">01 : 47 PM</div>
@@ -134,7 +123,6 @@
   </div>
 
   <div class="hero" id="hero">
-    <div class="hero-tag" id="heroTag"></div>
     <div class="hero-name" id="heroName"></div>
     <div class="hero-status" id="heroStatus"></div>
   </div>
@@ -147,36 +135,36 @@
 
 <script>
 (() => {
-  const globe = `<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="4.4" aria-hidden="true">
-    <circle cx="50" cy="50" r="44"/><line x1="6" y1="50" x2="94" y2="50"/>
-    <ellipse cx="50" cy="50" rx="20" ry="44"/>
-    <line x1="14" y1="28" x2="86" y2="28"/><line x1="14" y1="72" x2="86" y2="72"/></svg>`;
+  const svg = body => `<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="4.5"
+    stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+  const icons = {
+    play: svg(`<rect x="6" y="20" width="88" height="60" rx="16"/><path d="M42 36 L42 64 L65 50 Z"/>`),
+    tv: svg(`<rect x="6" y="14" width="88" height="56" rx="8"/><path d="M50 70 V84 M30 86 H70"/>`),
+    film: svg(`<rect x="10" y="38" width="80" height="48" rx="6"/><rect x="10" y="18" width="80" height="20" rx="4"/>
+      <path d="M30 18 L22 38 M52 18 L44 38 M74 18 L66 38"/>`),
+    globe: svg(`<circle cx="50" cy="50" r="44"/><path d="M6 50 H94 M14 28 H86 M14 72 H86"/><ellipse cx="50" cy="50" rx="20" ry="44"/>`)
+  };
 
   // `installed: false` previews the "Not installed" state.
   const apps = [
-    { name: "YouTube", tag: "Videos & music", accent: "255, 64, 64",
-      logo: "./app/src/main/res/drawable/youtube_logo.webp", installed: true },
-    { name: "TV", tag: "Live TV & inputs", accent: "77, 163, 255",
-      logo: "./app/src/main/res/drawable/tv_logo.webp", installed: true },
-    { name: "Netflix", tag: "Movies & shows", accent: "229, 9, 20",
-      logo: "./app/src/main/res/drawable/netflix_logo.webp", installed: true },
-    { name: "Browser", tag: "Rhenium", accent: "114, 214, 194",
-      logo: null, installed: true }
+    { name: "YouTube", icon: "play", installed: true },
+    { name: "TV", icon: "tv", installed: true },
+    { name: "Netflix", icon: "film", installed: true },
+    { name: "Browser", icon: "globe", installed: true }
   ];
 
   let selected = 0;
   let settingsFocused = false;
   const row = document.getElementById("row");
   const brand = document.getElementById("brand");
-  const hint = document.getElementById("settingsHint");
-  const hero = document.getElementById("hero");
+    const hero = document.getElementById("hero");
   const notice = document.getElementById("notice");
   let noticeTimer;
 
   const tiles = apps.map(app => {
     const el = document.createElement("div");
     el.className = "tile";
-    el.innerHTML = (app.logo ? `<img src="${app.logo}" alt="">` : globe) +
+    el.innerHTML = icons[app.icon] +
       `<span>${app.name}</span>`;
     row.appendChild(el);
     return el;
@@ -198,16 +186,9 @@
       el.classList.toggle("selected", i === selected);
       el.classList.toggle("dim-focus", i === selected && settingsFocused);
       el.classList.toggle("missing", !apps[i].installed);
-      el.style.setProperty("--accent", apps[i].accent);
     });
-    document.getElementById("screen").style.setProperty("--accent", app.accent);
     brand.classList.toggle("focused", settingsFocused);
-    hint.classList.toggle("visible", settingsFocused);
 
-    const tag = document.getElementById("heroTag");
-    tag.textContent = app.tag.toUpperCase();
-    tag.style.color = `rgb(${app.accent})`;
-    tag.style.filter = "brightness(1.35)";
     document.getElementById("heroName").textContent = app.name;
     const status = document.getElementById("heroStatus");
     status.textContent = "Not installed";

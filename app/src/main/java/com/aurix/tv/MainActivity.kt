@@ -1,7 +1,5 @@
 package com.aurix.tv
 
-import android.animation.ArgbEvaluator
-import android.animation.ValueAnimator
 import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -10,15 +8,14 @@ import android.content.IntentFilter
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ColorFilter
-import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.PixelFormat
-import android.graphics.RadialGradient
 import android.graphics.RectF
-import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.LayerDrawable
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -38,33 +35,29 @@ import java.util.Locale
 class MainActivity : Activity() {
     private data class AppTile(
         val name: String,
-        val tagline: String,
         val packageName: String,
-        val logo: Int?, // null -> built-in globe icon
-        val accent: Int
+        val icon: IconKind
     )
 
     private val apps = listOf(
-        AppTile("YouTube", "Videos & music", "com.google.android.youtube.tv", R.drawable.youtube_logo, Color.rgb(255, 64, 64)),
-        AppTile("TV", "Live TV & inputs", "com.android.tv", R.drawable.tv_logo, Color.rgb(77, 163, 255)),
-        AppTile("Netflix", "Movies & shows", "com.netflix.ninja", R.drawable.netflix_logo, Color.rgb(229, 9, 20)),
-        AppTile("Browser", "Rhenium", "com.nitesh.rhenium", null, Color.rgb(114, 214, 194))
+        AppTile("YouTube", "com.google.android.youtube.tv", IconKind.PLAY),
+        AppTile("TV", "com.android.tv", IconKind.TV),
+        AppTile("Netflix", "com.netflix.ninja", IconKind.FILM),
+        AppTile("Browser", "com.nitesh.rhenium", IconKind.GLOBE)
     )
 
-    private lateinit var backdrop: Backdrop
     private lateinit var brand: TextView
-    private lateinit var settingsHint: TextView
+    private lateinit var brandSlot: FrameLayout
     private lateinit var clock: TextView
     private lateinit var date: TextView
     private lateinit var hero: LinearLayout
-    private lateinit var heroTag: TextView
     private lateinit var heroName: TextView
     private lateinit var heroStatus: TextView
-    private val tiles = mutableListOf<FrameLayout>()
+    private val slots = mutableListOf<FrameLayout>()
+    private val cards = mutableListOf<FrameLayout>()
 
     private var selected = 0
     private var settingsFocused = false
-    private var accentAnimator: ValueAnimator? = null
 
     private val clockFormat = SimpleDateFormat("hh : mm a", Locale.getDefault())
     private val dateFormat = SimpleDateFormat("dd / MM / yyyy", Locale.getDefault())
@@ -166,14 +159,13 @@ class MainActivity : Activity() {
 
     private fun buildHome() {
         val root = FrameLayout(this).apply {
+            setBackgroundColor(Color.BLACK)
             clipChildren = false
             isFocusableInTouchMode = true
         }
 
-        backdrop = Backdrop(this)
-        root.addView(backdrop, FrameLayout.LayoutParams(-1, -1))
-
-        // Top-left: brand (doubles as the Settings button).
+        // Top-left: brand (doubles as the Settings button). It sits in a slot so the
+        // white glow has room to draw around it.
         brand = TextView(this).apply {
             text = "A.U.R.I.X"
             setTextColor(Color.WHITE)
@@ -185,24 +177,15 @@ class MainActivity : Activity() {
             contentDescription = "A.U.R.I.X Settings"
             setOnClickListener { openSettings() }
         }
-        root.addView(
-            brand,
-            FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.START).apply {
-                setMargins(dp(50), dp(30), 0, 0)
-            }
-        )
-        settingsHint = TextView(this).apply {
-            text = "Press OK for Settings"
-            textSize = 12f
-            setTextColor(Color.argb(170, 255, 255, 255))
-            typeface = customFont()
-            letterSpacing = 0.04f
-            visibility = View.INVISIBLE
+        brandSlot = FrameLayout(this).apply {
+            clipChildren = false
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            addView(brand, FrameLayout.LayoutParams(-2, -2))
         }
         root.addView(
-            settingsHint,
+            brandSlot,
             FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.START).apply {
-                setMargins(dp(64), dp(86), 0, 0)
+                setMargins(dp(34), dp(14), 0, 0)
             }
         )
 
@@ -232,12 +215,7 @@ class MainActivity : Activity() {
             }
         )
 
-        // Hero: the selected app's name and state.
-        heroTag = TextView(this).apply {
-            textSize = 13f
-            letterSpacing = 0.2f
-            typeface = customFont()
-        }
+        // Hero: the selected app's name (and a warning if it is not installed).
         heroName = TextView(this).apply {
             textSize = 58f
             setTextColor(Color.WHITE)
@@ -250,8 +228,7 @@ class MainActivity : Activity() {
         }
         hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            addView(heroTag)
-            addView(heroName, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(10) })
+            addView(heroName)
             addView(heroStatus, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(14) })
         }
         root.addView(
@@ -261,7 +238,7 @@ class MainActivity : Activity() {
             }
         )
 
-        // Bottom: the tile row.
+        // Bottom: the tile row. Each card sits in a slot so its glow has room to draw.
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -269,7 +246,7 @@ class MainActivity : Activity() {
             clipToPadding = false
         }
         apps.forEachIndexed { index, app ->
-            val tile = FrameLayout(this).apply {
+            val card = FrameLayout(this).apply {
                 background = tileBackground(false)
                 isClickable = true
                 contentDescription = app.name
@@ -282,9 +259,9 @@ class MainActivity : Activity() {
             }
             val icon = ImageView(this).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER
-                if (app.logo != null) setImageResource(app.logo) else setImageDrawable(GlobeDrawable())
+                setImageDrawable(LineIcon(app.icon))
             }
-            tile.addView(
+            card.addView(
                 icon,
                 FrameLayout.LayoutParams(dp(62), dp(62), Gravity.TOP or Gravity.CENTER_HORIZONTAL).apply {
                     topMargin = dp(22)
@@ -297,21 +274,26 @@ class MainActivity : Activity() {
                 letterSpacing = 0.04f
                 typeface = customFont()
             }
-            tile.addView(
+            card.addView(
                 label,
                 FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
                     bottomMargin = dp(16)
                 }
             )
-            row.addView(tile, LinearLayout.LayoutParams(dp(190), dp(132)).apply {
-                setMargins(dp(14), 0, dp(14), 0)
-            })
-            tiles.add(tile)
+
+            val slot = FrameLayout(this).apply {
+                clipChildren = false
+                setPadding(dp(GLOW_PAD), dp(GLOW_PAD), dp(GLOW_PAD), dp(GLOW_PAD))
+                addView(card, FrameLayout.LayoutParams(dp(190), dp(132)))
+            }
+            row.addView(slot, LinearLayout.LayoutParams(-2, -2))
+            slots.add(slot)
+            cards.add(card)
         }
         root.addView(
             row,
             FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply {
-                bottomMargin = dp(64)
+                bottomMargin = dp(46)
             }
         )
 
@@ -339,51 +321,49 @@ class MainActivity : Activity() {
     }
 
     private fun applySettingsFocus() {
-        brand.background = if (settingsFocused) GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = dp(12).toFloat()
-            setColor(Color.argb(46, 255, 255, 255))
-            setStroke(dp(2), Color.WHITE)
-        } else null
-        settingsHint.visibility = if (settingsFocused) View.VISIBLE else View.INVISIBLE
+        if (settingsFocused) {
+            brandSlot.background = glowDrawable(dp(12).toFloat(), 16, 4, true)
+            brand.setShadowLayer(dp(14).toFloat(), 0f, 0f, Color.WHITE)
+        } else {
+            brandSlot.background = null
+            brand.setShadowLayer(0f, 0f, 0f, Color.TRANSPARENT)
+        }
     }
 
     private fun updateSelector(animate: Boolean) {
         val app = apps[selected]
 
-        tiles.forEachIndexed { index, tile ->
+        slots.forEachIndexed { index, slot ->
             val isSelected = index == selected
             val active = isSelected && !settingsFocused
             val installed = isInstalled(apps[index])
 
-            tile.background = tileBackground(active)
+            cards[index].background = tileBackground(active)
+            slot.background = if (active) glowDrawable(dp(22).toFloat(), GLOW_PAD, 5, false) else null
 
-            val scale = if (isSelected) 1.1f else 1f
+            val scale = if (isSelected) 1.08f else 1f
             val alpha = when {
                 !installed -> 0.38f
                 isSelected -> 1f
-                else -> 0.78f
+                else -> 0.8f
             }
             if (animate) {
-                tile.animate().scaleX(scale).scaleY(scale).alpha(alpha)
+                slot.animate().scaleX(scale).scaleY(scale).alpha(alpha)
                     .setDuration(180)
                     .setInterpolator(DecelerateInterpolator())
                     .start()
             } else {
-                tile.scaleX = scale
-                tile.scaleY = scale
-                tile.alpha = alpha
+                slot.scaleX = scale
+                slot.scaleY = scale
+                slot.alpha = alpha
             }
         }
 
         updateHero(app, animate)
-        animateAccent(app.accent, animate)
     }
 
     private fun updateHero(app: AppTile, animate: Boolean) {
         val installed = isInstalled(app)
-        heroTag.text = app.tagline.uppercase(Locale.ROOT)
-        heroTag.setTextColor(mix(app.accent, Color.WHITE, 0.35f))
         heroName.text = app.name
         // Only shown when the app is missing.
         heroStatus.text = "Not installed"
@@ -399,19 +379,6 @@ class MainActivity : Activity() {
         } else {
             hero.alpha = 1f
             hero.translationX = 0f
-        }
-    }
-
-    private fun animateAccent(target: Int, animate: Boolean) {
-        accentAnimator?.cancel()
-        if (!animate) {
-            backdrop.accent = target
-            return
-        }
-        accentAnimator = ValueAnimator.ofObject(ArgbEvaluator(), backdrop.accent, target).apply {
-            duration = 380
-            addUpdateListener { backdrop.accent = it.animatedValue as Int }
-            start()
         }
     }
 
@@ -456,9 +423,9 @@ class MainActivity : Activity() {
     // --------------------------------------------------------------- helpers
 
     // Frosted-glass card: translucent white fill, a soft sheen across the top half
-    // and a bright hairline edge. (True background blur needs API 31+, so the
-    // glow in Backdrop shows through the translucent fill instead.)
-    private fun tileBackground(active: Boolean): android.graphics.drawable.Drawable {
+    // and a bright hairline edge. (True background blur needs API 31+; on a black
+    // background the translucent fill reads as glass.)
+    private fun tileBackground(active: Boolean): Drawable {
         val radius = dp(22).toFloat()
         val base = GradientDrawable(
             GradientDrawable.Orientation.TL_BR,
@@ -467,7 +434,7 @@ class MainActivity : Activity() {
         ).apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = radius
-            if (active) setStroke(dp(2), Color.argb(235, 255, 255, 255))
+            if (active) setStroke(dp(2), Color.argb(240, 255, 255, 255))
             else setStroke(dp(1), Color.argb(96, 255, 255, 255))
         }
         val sheen = GradientDrawable(
@@ -477,16 +444,36 @@ class MainActivity : Activity() {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = radius - dp(2)
         }
-        return android.graphics.drawable.LayerDrawable(arrayOf(base, sheen)).apply {
+        return LayerDrawable(arrayOf(base, sheen)).apply {
             setLayerInset(1, dp(2), dp(2), dp(2), dp(66))
         }
     }
 
-    private fun mix(from: Int, to: Int, t: Float): Int = Color.rgb(
-        (Color.red(from) + (Color.red(to) - Color.red(from)) * t).toInt(),
-        (Color.green(from) + (Color.green(to) - Color.green(from)) * t).toInt(),
-        (Color.blue(from) + (Color.blue(to) - Color.blue(from)) * t).toInt()
-    )
+    /**
+     * A soft white glow made of concentric rounded outlines that fade outwards. It fills a
+     * slot whose padding is [padDp], so the glow hugs the edge of the view inside it.
+     */
+    private fun glowDrawable(innerRadius: Float, padDp: Int, steps: Int, bright: Boolean): Drawable {
+        val ring = dp(3)
+        val pad = dp(padDp)
+        val layers = Array<Drawable>(steps) { j ->
+            val inset = pad - ring / 2 - ring * (steps - 1 - j)
+            val fade = (j + 1f) / steps
+            val alpha = ((if (bright) 140 else 125) * fade * fade).toInt()
+            GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                setColor(Color.TRANSPARENT)
+                cornerRadius = innerRadius + (pad - inset)
+                setStroke(ring, Color.argb(alpha, 255, 255, 255))
+            }
+        }
+        return LayerDrawable(layers).apply {
+            for (j in 0 until steps) {
+                val inset = pad - ring / 2 - ring * (steps - 1 - j)
+                setLayerInset(j, inset, inset, inset, inset)
+            }
+        }
+    }
 
     private fun customFont(): Typeface = try {
         if (Build.VERSION.SDK_INT >= 26) resources.getFont(R.font.arial_black)
@@ -503,49 +490,21 @@ class MainActivity : Activity() {
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density + 0.5f).toInt()
-}
 
-/** Dark vertical gradient with a soft glow in the selected app's accent colour. */
-private class Backdrop(context: Context) : View(context) {
-    private val basePaint = Paint()
-    private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    var accent: Int = Color.WHITE
-        set(value) {
-            field = value
-            rebuildGlow()
-            invalidate()
-        }
-
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        basePaint.shader = LinearGradient(
-            0f, 0f, 0f, h.toFloat(),
-            Color.rgb(13, 20, 32), Color.rgb(4, 6, 10), Shader.TileMode.CLAMP
-        )
-        rebuildGlow()
-    }
-
-    private fun rebuildGlow() {
-        if (width == 0 || height == 0) return
-        glowPaint.shader = RadialGradient(
-            width * 0.2f, height * 0.34f, width * 0.65f,
-            Color.argb(92, Color.red(accent), Color.green(accent), Color.blue(accent)),
-            Color.TRANSPARENT, Shader.TileMode.CLAMP
-        )
-    }
-
-    override fun onDraw(canvas: Canvas) {
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), basePaint)
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), glowPaint)
+    private companion object {
+        const val GLOW_PAD = 18
     }
 }
 
-/** Simple white globe, used for the Browser tile so no brand artwork is needed. */
-private class GlobeDrawable : Drawable() {
+private enum class IconKind { PLAY, TV, FILM, GLOBE }
+
+/** Simple white line-art icons (no brand artwork), drawn on a square unit box. */
+private class LineIcon(private val kind: IconKind) : Drawable() {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         color = Color.WHITE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
     }
 
     override fun getIntrinsicWidth() = 256
@@ -553,17 +512,49 @@ private class GlobeDrawable : Drawable() {
 
     override fun draw(canvas: Canvas) {
         val b = bounds
-        val cx = b.exactCenterX()
-        val cy = b.exactCenterY()
-        val r = minOf(b.width(), b.height()) / 2f * 0.88f
-        paint.strokeWidth = r * 0.1f
-        canvas.drawCircle(cx, cy, r, paint)
-        canvas.drawLine(cx - r, cy, cx + r, cy, paint)
-        canvas.drawOval(RectF(cx - r * 0.45f, cy - r, cx + r * 0.45f, cy + r), paint)
-        val y = r * 0.5f
-        val half = Math.sqrt((r * r - y * y).toDouble()).toFloat()
-        canvas.drawLine(cx - half, cy - y, cx + half, cy - y, paint)
-        canvas.drawLine(cx - half, cy + y, cx + half, cy + y, paint)
+        val s = minOf(b.width(), b.height()).toFloat()
+        val left = b.exactCenterX() - s / 2f
+        val top = b.exactCenterY() - s / 2f
+        fun x(f: Float) = left + s * f
+        fun y(f: Float) = top + s * f
+        fun rect(l: Float, t: Float, r: Float, bt: Float) = RectF(x(l), y(t), x(r), y(bt))
+        fun line(x1: Float, y1: Float, x2: Float, y2: Float) =
+            canvas.drawLine(x(x1), y(y1), x(x2), y(y2), paint)
+
+        paint.strokeWidth = s * 0.045f
+        when (kind) {
+            IconKind.PLAY -> {
+                canvas.drawRoundRect(rect(.06f, .20f, .94f, .80f), s * .16f, s * .16f, paint)
+                val tri = Path().apply {
+                    moveTo(x(.42f), y(.36f))
+                    lineTo(x(.42f), y(.64f))
+                    lineTo(x(.65f), y(.50f))
+                    close()
+                }
+                canvas.drawPath(tri, paint)
+            }
+            IconKind.TV -> {
+                canvas.drawRoundRect(rect(.06f, .14f, .94f, .70f), s * .08f, s * .08f, paint)
+                line(.50f, .70f, .50f, .84f)
+                line(.30f, .86f, .70f, .86f)
+            }
+            IconKind.FILM -> {
+                canvas.drawRoundRect(rect(.10f, .38f, .90f, .86f), s * .06f, s * .06f, paint)
+                canvas.drawRoundRect(rect(.10f, .18f, .90f, .38f), s * .04f, s * .04f, paint)
+                line(.30f, .18f, .22f, .38f)
+                line(.52f, .18f, .44f, .38f)
+                line(.74f, .18f, .66f, .38f)
+            }
+            IconKind.GLOBE -> {
+                val c = .50f
+                val r = s * .44f
+                canvas.drawCircle(x(c), y(c), r, paint)
+                line(.06f, .50f, .94f, .50f)
+                canvas.drawOval(rect(.30f, .06f, .70f, .94f), paint)
+                line(.14f, .28f, .86f, .28f)
+                line(.14f, .72f, .86f, .72f)
+            }
+        }
     }
 
     override fun setAlpha(alpha: Int) {
