@@ -195,17 +195,19 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE)
             typeface = customFont()
             includeFontPadding = false
+            maxLines = 1
         }
         date = TextView(this).apply {
             textSize = 15f
             setTextColor(Color.argb(190, 255, 255, 255))
             typeface = customFont()
             includeFontPadding = false
+            maxLines = 1
         }
         val timeBox = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.END
-            addView(clock)
+            addView(clock, LinearLayout.LayoutParams(-2, -2))
             addView(date, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(6) })
         }
         root.addView(
@@ -221,14 +223,16 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE)
             typeface = customFont()
             includeFontPadding = false
+            maxLines = 1
         }
         heroStatus = TextView(this).apply {
             textSize = 15f
             typeface = customFont()
+            maxLines = 1
         }
         hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            addView(heroName)
+            addView(heroName, LinearLayout.LayoutParams(-2, -2))
             addView(heroStatus, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(14) })
         }
         root.addView(
