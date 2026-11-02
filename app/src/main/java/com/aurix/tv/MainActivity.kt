@@ -40,7 +40,7 @@ class MainActivity : Activity() {
     private lateinit var clock: TextView
     private lateinit var date: TextView
     private val bubbles = mutableListOf<ImageView>()
-    private var selected = 0
+    private var selected = 1
     private var settingsFocused = false
 
     private val clockFormat = SimpleDateFormat("h : mm a", Locale.getDefault())
