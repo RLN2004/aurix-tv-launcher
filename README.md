@@ -44,6 +44,29 @@ The GitHub Actions workflow builds the APK on GitHub-hosted runners.
 3. When the run finishes, open it and download the
    `aurix-tv-debug-apk` artifact. Extract it to get `app-debug.apk`.
 
+## UI preview
+
+Open `preview.html` in a browser to see the launcher layout (arrow keys move,
+Up focuses Settings). It mirrors the dp values in `MainActivity.kt`.
+Add `?missing=3` to preview the "Not installed" state of a tile.
+
+## Debloat (reversible)
+
+`debloat/mitv-debloat.ps1` disables unused Mi TV / Google apps over ADB using
+`pm disable-user`, so everything can be restored. It is a dry run unless you
+pass `-Apply`.
+
+```powershell
+adb connect 192.168.1.6:5555
+.\debloat\mitv-debloat.ps1              # dry run
+.\debloat\mitv-debloat.ps1 -Apply       # tiers 1-2
+.\debloat\mitv-debloat.ps1 -Report      # list Xiaomi/Google packages not yet reviewed
+.\debloat\mitv-debloat.ps1 -Restore -Apply
+```
+
+Tier 3 (stock launcher, Play Store) is refused unless A.U.R.I.X. is already the
+default Home app.
+
 ## Install and test over ADB
 
 ```powershell

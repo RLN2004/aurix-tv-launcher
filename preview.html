@@ -11,247 +11,205 @@
     font-display: swap;
   }
 
-  /* Keep these values aligned with MainActivity.kt. Android dp/sp are
-     represented as CSS px here for a 1:1 layout-design reference. */
+  /* Values mirror MainActivity.kt. Android dp is shown as CSS px, designed for
+     a 960x540 dp screen (a 1080p TV at 320 dpi). */
   :root {
-    --black: #000;
-    --white: #fff;
-    --brand-left: 42px;
-    --brand-top: 24px;
-    --clock-top: 20px;
-    --clock-right: 42px;
-    --banner-width: 610px;
-    --banner-height: 270px;
-    --banner-bottom-offset: 72.5px;
-    --selected-size: 155px;
-    --side-size: 140px;
-    --selected-bottom: 12px;
-    --side-bottom: -70px;
-    --side-offset: 238px;
-    --motion-ms: 230ms;
+    --accent: 255, 64, 64;
+    --tile-w: 190px;
+    --tile-h: 132px;
+    --tile-gap: 28px;
+    --motion: 180ms;
   }
 
   * { box-sizing: border-box; }
   html, body {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-    background: var(--black);
-    color: var(--white);
+    width: 100%; height: 100%; margin: 0; overflow: hidden;
+    background: #000; color: #fff;
   }
-  body {
-    font-family: Arial, sans-serif;
-    user-select: none;
-  }
-  .screen {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    min-height: 420px;
-    overflow: hidden;
-    background: #000;
-  }
-  .brand {
-    position: absolute;
-    top: var(--brand-top);
-    left: var(--brand-left);
-    height: 54px;
-    display: flex;
-    align-items: center;
-    padding: 5px 12px;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    color: #fff;
-    font: 25px/1 "Arial Black", "Arial", sans-serif;
-    letter-spacing: .04em;
-    outline: none;
-    cursor: default;
-  }
-  .brand.focused {
-    background: rgba(255,255,255,.215);
-    border-color: #fff;
-  }
-  .time-box {
-    position: absolute;
-    top: var(--clock-top);
-    right: var(--clock-right);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    color: #fff;
-    font-family: "Arial Black", Arial, sans-serif;
-    font-weight: 900;
-    line-height: 1.18;
-    white-space: nowrap;
-  }
-  #clock { font-size: 27px; }
-  #date { font-size: 18px; }
-  .banner {
-    position: absolute;
-    left: 50%;
-    top: calc(50% - var(--banner-bottom-offset));
-    width: min(var(--banner-width), 70vw);
-    height: min(var(--banner-height), 34vh);
-    object-fit: contain;
-    transform: translate(-50%, -50%);
-  }
-  .selector {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-  .bubble {
-    position: absolute;
-    left: 50%;
-    bottom: var(--side-bottom);
-    width: var(--side-size);
-    height: var(--side-size);
-    padding: 42px;
-    border-radius: 50%;
-    border: 1px solid rgba(225,225,225,.45);
-    background: linear-gradient(135deg,
-      rgba(170,170,170,.32) 0%,
-      rgba(75,75,75,.23) 52%,
-      rgba(12,12,12,.82) 100%);
-    box-shadow: 0 4px 12px rgba(0,0,0,.45);
-    object-fit: contain;
-    transform: translateX(-50%);
-    opacity: .82;
-    transition:
-      left var(--motion-ms) ease,
-      bottom var(--motion-ms) ease,
-      width var(--motion-ms) ease,
-      height var(--motion-ms) ease,
-      padding var(--motion-ms) ease,
-      opacity var(--motion-ms) ease,
-      border-color var(--motion-ms) ease,
-      background var(--motion-ms) ease;
-  }
-  .bubble.selected {
-    width: var(--selected-size);
-    height: var(--selected-size);
-    bottom: var(--selected-bottom);
-    padding: 48px 48px 48px 32px;
-    border: 2px solid rgba(225,225,225,.745);
-    background: linear-gradient(135deg,
-      rgba(170,170,170,.41) 0%,
-      rgba(75,75,75,.305) 52%,
-      rgba(12,12,12,.82) 100%);
-    opacity: 1;
-    z-index: 2;
-  }
-  .bubble.pos-left { left: calc(50% - var(--side-offset)); }
-  .bubble.pos-right { left: calc(50% + var(--side-offset)); }
-  .bubble.pos-center { left: 50%; }
+  body { font-family: Roboto, "Segoe UI", Arial, sans-serif; user-select: none; }
 
-  .hint {
-    position: absolute;
-    left: 50%;
-    bottom: 18px;
-    transform: translateX(-50%);
-    color: rgba(255,255,255,.42);
-    font: 12px Arial, sans-serif;
-    letter-spacing: .08em;
-    opacity: 0;
-    transition: opacity .2s ease;
-    pointer-events: none;
+  .screen {
+    position: relative; width: 100vw; height: 100vh; min-height: 420px; overflow: hidden;
+    background: linear-gradient(180deg, rgb(13,20,32), rgb(4,6,10));
   }
-  .screen:hover .hint { opacity: 1; }
-  .notice {
-    position: absolute;
-    left: 50%;
-    top: 70%;
-    transform: translate(-50%, 0);
-    padding: 10px 16px;
-    border: 1px solid rgba(255,255,255,.25);
-    border-radius: 6px;
-    background: rgba(25,25,25,.92);
-    color: #fff;
-    font: 14px Arial, sans-serif;
+  .glow {
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 20% 34%, rgba(var(--accent), .36), transparent 65vw);
+    transition: background .38s ease;
+  }
+
+  .brand {
+    position: absolute; top: 30px; left: 50px;
+    padding: 8px 14px; border: 2px solid transparent; border-radius: 12px;
+    font: 22px/1.3 "Arial Black", Arial, sans-serif; letter-spacing: .08em;
+  }
+  .brand.focused { background: rgba(255,255,255,.18); border-color: #fff; }
+  .settings-hint {
+    position: absolute; top: 86px; left: 64px;
+    font-size: 13px; letter-spacing: .04em; color: rgba(255,255,255,.67);
     opacity: 0;
-    transition: opacity .15s ease;
+  }
+  .settings-hint.visible { opacity: 1; }
+
+  .time-box {
+    position: absolute; top: 30px; right: 56px; text-align: right; white-space: nowrap;
+  }
+  #clock { font-size: 34px; font-weight: 300; line-height: 1; }
+  #date { margin-top: 6px; font-size: 15px; line-height: 1; color: rgba(255,255,255,.65); }
+
+  .hero {
+    position: absolute; left: 64px; top: calc((100% - 110px) / 2); transform: translateY(-50%);
+    transition: opacity .22s ease, translate .22s ease;
+  }
+  .hero.swap { opacity: 0; translate: -16px 0; transition: none; }
+  .hero-tag { font-size: 14px; font-weight: 500; letter-spacing: .22em; }
+  .hero-name { margin-top: 10px; font: 58px/1 "Arial Black", Arial, sans-serif; }
+  .hero-status { margin-top: 14px; font-size: 16px; color: rgba(255,255,255,.63); }
+  .hero-status.missing { color: #ffc107; }
+
+  .row {
+    position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%);
+    display: flex; gap: var(--tile-gap);
+  }
+  .tile {
+    position: relative; width: var(--tile-w); height: var(--tile-h);
+    border-radius: 22px; border: 1px solid rgba(255,255,255,.18);
+    background: linear-gradient(180deg, rgb(25,32,46), rgb(18,24,35));
+    opacity: .78;
+    transition: transform var(--motion) ease-out, opacity var(--motion) ease-out,
+                box-shadow var(--motion) ease-out;
+  }
+  .tile.selected {
+    transform: scale(1.1); opacity: 1;
+    border: 3px solid #fff;
+    background: linear-gradient(180deg, rgb(48,60,84), rgb(32,41,60));
+    box-shadow: 0 14px 34px rgba(var(--accent), .55);
+  }
+  .tile.dim-focus { border-width: 1px; border-color: rgba(255,255,255,.18);
+    background: linear-gradient(180deg, rgb(25,32,46), rgb(18,24,35)); box-shadow: none; }
+  .tile.missing { opacity: .38; }
+  .tile img, .tile svg {
+    position: absolute; top: 22px; left: 50%; width: 62px; height: 62px;
+    transform: translateX(-50%); object-fit: contain;
+  }
+  .tile.selected img, .tile.selected svg { top: 20px; }
+  .tile span {
+    position: absolute; bottom: 16px; left: 0; right: 0; text-align: center;
+    font-size: 15px; font-weight: 500; letter-spacing: .05em;
+  }
+  .tile.selected span { bottom: 14px; }
+
+  .notice {
+    position: absolute; left: 50%; top: 66%; transform: translateX(-50%);
+    padding: 10px 16px; border: 1px solid rgba(255,255,255,.25); border-radius: 6px;
+    background: rgba(25,25,25,.92); font-size: 14px; opacity: 0; transition: opacity .15s ease;
     pointer-events: none;
   }
   .notice.visible { opacity: 1; }
-  @media (max-width: 760px) {
-    :root {
-      --brand-left: 18px;
-      --clock-right: 18px;
-      --side-offset: min(26vw, 185px);
-      --banner-width: 82vw;
-    }
-    .brand { font-size: 20px; }
-    #clock { font-size: 22px; }
-    #date { font-size: 15px; }
+  .help {
+    position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+    font-size: 12px; letter-spacing: .08em; color: rgba(255,255,255,.38);
+    opacity: 0; transition: opacity .2s ease;
   }
+  .screen:hover .help { opacity: 1; }
 </style>
 </head>
 <body>
 <main class="screen" id="screen" aria-label="A.U.R.I.X. TV launcher preview">
-  <div class="brand" id="brand" tabindex="-1">A.U.R.I.X</div>
+  <div class="glow" id="glow"></div>
+
+  <div class="brand" id="brand">A.U.R.I.X</div>
+  <div class="settings-hint" id="settingsHint">Press OK for Settings</div>
 
   <div class="time-box">
-    <div id="clock">12 : 00 PM</div>
-    <div id="date">02 / 11 / 2026</div>
+    <div id="clock">12:00 PM</div>
+    <div id="date">Mon, 2 Nov 2026</div>
   </div>
 
-  <img class="banner" id="banner"
-       src="./app/src/main/res/drawable/youtube_banner.webp"
-       alt="Selected app banner">
-
-  <div class="selector" id="selector">
-    <img class="bubble" data-index="0"
-         src="./app/src/main/res/drawable/netflix_logo.webp" alt="Netflix">
-    <img class="bubble selected" data-index="1"
-         src="./app/src/main/res/drawable/youtube_logo.webp" alt="YouTube">
-    <img class="bubble" data-index="2"
-         src="./app/src/main/res/drawable/tv_logo.webp" alt="TV">
+  <div class="hero" id="hero">
+    <div class="hero-tag" id="heroTag"></div>
+    <div class="hero-name" id="heroName"></div>
+    <div class="hero-status" id="heroStatus"></div>
   </div>
 
-  <div class="hint">← / → SELECT &nbsp; · &nbsp; ↑ SETTINGS &nbsp; · &nbsp; ENTER OPEN</div>
+  <div class="row" id="row"></div>
+
+  <div class="help">← / → SELECT &nbsp;·&nbsp; ↑ SETTINGS &nbsp;·&nbsp; ENTER OPEN</div>
   <div class="notice" id="notice" role="status"></div>
 </main>
 
 <script>
 (() => {
+  const globe = `<svg viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="4.4" aria-hidden="true">
+    <circle cx="50" cy="50" r="44"/><line x1="6" y1="50" x2="94" y2="50"/>
+    <ellipse cx="50" cy="50" rx="20" ry="44"/>
+    <line x1="14" y1="28" x2="86" y2="28"/><line x1="14" y1="72" x2="86" y2="72"/></svg>`;
+
+  // `installed: false` previews the "Not installed" state.
   const apps = [
-    { name: "NETFLIX", logo: "./app/src/main/res/drawable/netflix_logo.webp",
-      banner: "./app/src/main/res/drawable/netflix_banner.webp" },
-    { name: "YouTube", logo: "./app/src/main/res/drawable/youtube_logo.webp",
-      banner: "./app/src/main/res/drawable/youtube_banner.webp" },
-    { name: "TV", logo: "./app/src/main/res/drawable/tv_logo.webp",
-      banner: "./app/src/main/res/drawable/tv_banner.webp" }
+    { name: "YouTube", tag: "Videos & music", accent: "255, 64, 64",
+      logo: "./app/src/main/res/drawable/youtube_logo.webp", installed: true },
+    { name: "TV", tag: "Live TV & inputs", accent: "77, 163, 255",
+      logo: "./app/src/main/res/drawable/tv_logo.webp", installed: true },
+    { name: "Netflix", tag: "Movies & shows", accent: "229, 9, 20",
+      logo: "./app/src/main/res/drawable/netflix_logo.webp", installed: true },
+    { name: "Browser", tag: "Rhenium", accent: "114, 214, 194",
+      logo: null, installed: true }
   ];
 
-  let selected = 1;
+  let selected = 0;
   let settingsFocused = false;
-  const bubbles = [...document.querySelectorAll(".bubble")];
+  const row = document.getElementById("row");
   const brand = document.getElementById("brand");
-  const banner = document.getElementById("banner");
+  const hint = document.getElementById("settingsHint");
+  const hero = document.getElementById("hero");
   const notice = document.getElementById("notice");
   let noticeTimer;
+
+  const tiles = apps.map(app => {
+    const el = document.createElement("div");
+    el.className = "tile";
+    el.innerHTML = (app.logo ? `<img src="${app.logo}" alt="">` : globe) +
+      `<span>${app.name}</span>`;
+    row.appendChild(el);
+    return el;
+  });
 
   function updateClock() {
     const now = new Date();
     document.getElementById("clock").textContent =
-      now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true })
-        .replace(/(\d{1,2}):(\d{2})/, "$1 : $2").toUpperCase();
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const yyyy = now.getFullYear();
-    document.getElementById("date").textContent = dd + " / " + mm + " / " + yyyy;
+      now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+    document.getElementById("date").textContent =
+      now.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+        .replace(",", ",");
   }
 
-  function updateSelector() {
-    banner.src = apps[selected].banner;
-    bubbles.forEach((bubble, index) => {
-      const relative = (index - selected + apps.length) % apps.length;
-      bubble.classList.toggle("selected", relative === 0);
-      bubble.classList.remove("pos-left", "pos-right", "pos-center");
-      bubble.classList.add(relative === 0 ? "pos-center" :
-        relative === 1 ? "pos-left" : "pos-right");
+  function render(animateHero) {
+    const app = apps[selected];
+    tiles.forEach((el, i) => {
+      el.classList.toggle("selected", i === selected);
+      el.classList.toggle("dim-focus", i === selected && settingsFocused);
+      el.classList.toggle("missing", !apps[i].installed);
+      el.style.setProperty("--accent", apps[i].accent);
     });
+    document.getElementById("screen").style.setProperty("--accent", app.accent);
+    brand.classList.toggle("focused", settingsFocused);
+    hint.classList.toggle("visible", settingsFocused);
+
+    const tag = document.getElementById("heroTag");
+    tag.textContent = app.tag.toUpperCase();
+    tag.style.color = `rgb(${app.accent})`;
+    tag.style.filter = "brightness(1.35)";
+    document.getElementById("heroName").textContent = app.name;
+    const status = document.getElementById("heroStatus");
+    status.textContent = app.installed ? "Press OK to open" : "Not installed";
+    status.classList.toggle("missing", !app.installed);
+
+    if (animateHero) {
+      hero.classList.add("swap");
+      void hero.offsetWidth;
+      hero.classList.remove("swap");
+    }
   }
 
   function showNotice(message) {
@@ -261,36 +219,33 @@
     noticeTimer = setTimeout(() => notice.classList.remove("visible"), 1500);
   }
 
-  function setSettingsFocus(value) {
-    settingsFocused = value;
-    brand.classList.toggle("focused", value);
-  }
-
   document.addEventListener("keydown", event => {
     const key = event.key;
     if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Enter", " "].includes(key)) {
       event.preventDefault();
     }
-    if (key === "ArrowUp") {
-      setSettingsFocus(true);
-    } else if (key === "ArrowDown") {
-      setSettingsFocus(false);
-    } else if (key === "ArrowLeft" && !settingsFocused) {
-      selected = (selected - 1 + apps.length) % apps.length;
-      updateSelector();
-    } else if (key === "ArrowRight" && !settingsFocused) {
-      selected = (selected + 1) % apps.length;
-      updateSelector();
-    } else if (key === "Enter" || key === " ") {
-      showNotice(settingsFocused ? "TV Settings — native app action" :
-        "Launch " + apps[selected].name + " — native app action");
-    } else if (key === "Escape" || key === "Backspace") {
-      setSettingsFocus(false);
+    if (key === "ArrowUp") { settingsFocused = true; render(true); }
+    else if (key === "ArrowDown" || key === "Escape" || key === "Backspace") { settingsFocused = false; render(true); }
+    else if (key === "ArrowLeft" && !settingsFocused && selected > 0) { selected--; render(true); }
+    else if (key === "ArrowRight" && !settingsFocused && selected < apps.length - 1) { selected++; render(true); }
+    else if (key === "Enter" || key === " ") {
+      showNotice(settingsFocused ? "TV Settings — native app action"
+        : apps[selected].installed ? "Launch " + apps[selected].name + " — native app action"
+        : apps[selected].name + " is not installed.");
     }
   });
 
+  tiles.forEach((el, i) => el.addEventListener("click", () => {
+    selected = i; settingsFocused = false; render(true);
+  }));
+  // ?missing=3 previews the "Not installed" state for a tile (e.g. Browser).
+  const missing = new URLSearchParams(location.search).get("missing");
+  if (missing !== null) apps[Number(missing)].installed = false;
+  const start = new URLSearchParams(location.search).get("sel");
+  if (start !== null) selected = Math.min(Number(start), apps.length - 1);
+
   updateClock();
-  updateSelector();
+  render(false);
   setInterval(updateClock, 1000);
 })();
 </script>
